@@ -2,14 +2,10 @@
 BIN_NAME := $(or $(BIN_NAME),refeedmutator)
 
 # Makefile variables.
-MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
-PROJECT_DIR := $(dir $(MAKEFILE_PATH))
+PROJECT_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 # Artifacts output directory.
-ARTIFACTS_DIR := $(or $(ARTIFACTS_DIR),bin)
-
-# Artifacts output directory abspath.
-ARTIFACTS_ABS_PATH := $(addprefix $(PROJECT_DIR),$(ARTIFACTS_DIR))
+ARTIFACTS_DIR := $(abspath $(or $(ARTIFACTS_DIR),$(addprefix $(PROJECT_DIR),BUILD)))
 
 # Version for go mod tidy -compat flag.
 GO_MOD_COMPAT_VERSION := 1.18
@@ -40,7 +36,7 @@ endif
 # Build flags.
 BUILD_ENV = CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 # https://github.com/golang/go/issues/26492
-BUILD_ARGS = -buildvcs=true -ldflags "-extldflags \"-static\""
+BUILD_ARGS = -buildvcs=true -ldflags "-s -w -extldflags \"-static\""
 
 # Set golangci-lint binary path.
 GOLANGCI_LINT_BIN=$(GOBIN)/golangci-lint
@@ -83,19 +79,18 @@ verify:
 # Create artifacts directory.
 .PHONY: artifacts-dir
 artifacts-dir:
-	$(MKDIR_BIN) -vp "$(ARTIFACTS_ABS_PATH)"
+	$(MKDIR_BIN) -vp "$(ARTIFACTS_DIR)"
 
-# Clean artifacts directory and cache.
+# Clean cache.
 .PHONY: clean
 clean:
 	$(GOLANGCI_LINT_BIN) cache clean -v
 	$(GO_BIN) clean -cache -testcache -fuzzcache -x
-	$(RM_BIN) -vrf "$(ARTIFACTS_ABS_PATH)"
 
 # Build application.
 .PHONY: build
 build: artifacts-dir
-	$(ENV_BIN) $(BUILD_ENV) $(GO_BIN) build $(BUILD_ARGS) -v -a -o "$(ARTIFACTS_ABS_PATH)/$(BIN_NAME)"
+	$(ENV_BIN) $(BUILD_ENV) $(GO_BIN) build $(BUILD_ARGS) -v -a -o "$(ARTIFACTS_DIR)/$(BIN_NAME)"
 
 # Fail when directory tree is dirty.
 .PHONY: check-git-clean

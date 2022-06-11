@@ -1,5 +1,6 @@
 # Binaries for programs and plugins.
 bin/
+BUILD/
 
 # Test binary, build with `go test -c`.
 *.test

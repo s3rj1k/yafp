@@ -188,6 +188,12 @@ func handleMuteFeed(c *gin.Context) {
 
 		if (cfg.TitleQuery != "" && reTitle.MatchString(el.Title)) ||
 			(cfg.DescriptionQuery != "" && reDescription.MatchString(el.Description)) {
+			if cfg.RewriteAuthor == "" {
+				// do not add item to resulting feed when
+				// RegExp matched and RewriteAuthor not specified
+				continue
+			}
+
 			author = &feeds.Author{
 				Name:  cfg.RewriteAuthor,
 				Email: "",

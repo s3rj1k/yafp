@@ -1,0 +1,17 @@
+[Unit]
+Description=reFeedMutator server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/refeedmutator -bind-address=":80"
+ExecStop=/usr/bin/pkill refeedmutator
+
+Restart=on-failure
+RestartSec=10
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
