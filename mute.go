@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -14,7 +15,13 @@ import (
 	"github.com/mmcdole/gofeed"
 )
 
-const feedFetchTimeoutSeconds = 90
+const (
+	feedFetchTimeoutSeconds = 90
+
+	contentTypeRSS  = "application/rss+xml"
+	contentTypeAtom = "application/atom+xml"
+	contentTypeJSON = "application/feed+json"
+)
 
 type Mute struct {
 	FeedURL          string `form:"feed_url" binding:"required,url"`
@@ -93,6 +100,25 @@ func handleMuteFeed(c *gin.Context) {
 		validationMuteErrorResponse(c, err)
 
 		return
+	}
+
+	bytesOut, err := cache.Get(c.Request.URL.RawQuery)
+	if err == nil {
+		switch gofeed.DetectFeedType(bytes.NewReader(bytesOut)) {
+		case gofeed.FeedTypeRSS:
+			c.Data(http.StatusOK, contentTypeRSS, bytesOut)
+
+			return
+		case gofeed.FeedTypeAtom:
+			c.Data(http.StatusOK, contentTypeAtom, bytesOut)
+
+			return
+		case gofeed.FeedTypeJSON:
+			c.Data(http.StatusOK, contentTypeJSON, bytesOut)
+
+			return
+		case gofeed.FeedTypeUnknown:
+		}
 	}
 
 	reTitle := cachedRegexpMustCompile(cfg.TitleQuery)
@@ -222,16 +248,16 @@ func handleMuteFeed(c *gin.Context) {
 
 	switch feedIn.FeedType {
 	case "rss":
-		contentType = "application/rss+xml"
+		contentType = contentTypeRSS
 		out, err = feedOut.ToRss()
 	case "atom":
-		contentType = "application/atom+xml"
+		contentType = contentTypeAtom
 		out, err = feedOut.ToAtom()
 	case "json":
-		contentType = "application/feed+json"
+		contentType = contentTypeJSON
 		out, err = feedOut.ToJSON()
 	default:
-		contentType = "application/rss+xml"
+		contentType = contentTypeRSS
 		out, err = feedOut.ToRss()
 	}
 
@@ -242,5 +268,15 @@ func handleMuteFeed(c *gin.Context) {
 		return
 	}
 
-	c.Data(http.StatusOK, contentType, []byte(out))
+	bytesOut = []byte(out)
+
+	err = cache.Set(c.Request.URL.RawQuery, bytesOut)
+	if err != nil {
+		c.String(http.StatusServiceUnavailable,
+			"%d Unable to cache feed data", http.StatusServiceUnavailable)
+
+		return
+	}
+
+	c.Data(http.StatusOK, contentType, bytesOut)
 }
