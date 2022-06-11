@@ -1,5 +1,5 @@
 # Name of output binary.
-BIN_NAME := $(or $(BIN_NAME),refeedmutator)
+BIN_NAME := $(or $(BIN_NAME),yafp)
 
 # Makefile variables.
 PROJECT_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))

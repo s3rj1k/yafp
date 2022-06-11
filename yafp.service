@@ -1,11 +1,11 @@
 [Unit]
-Description=reFeedMutator server
+Description=YAFP: Yet Another Feed Proxy
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/refeedmutator -bind-address=":80"
-ExecStop=/usr/bin/pkill refeedmutator
+ExecStart=/usr/local/bin/yafp -bind-address=":80"
+ExecStop=/usr/bin/pkill yafp
 
 Restart=on-failure
 RestartSec=10

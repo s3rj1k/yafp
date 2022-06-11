@@ -1,4 +1,4 @@
-module github.com/s3rj1k/reFeedMutator
+module github.com/s3rj1k/yafp
 
 go 1.18
 

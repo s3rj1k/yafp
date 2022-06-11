@@ -1,4 +1,4 @@
-# reFeedMutator
+# yafp: Yet Another Feed Proxy
 
 ### feedly_filter:
     author:FEEDLY_LEO_MUTE_ME
