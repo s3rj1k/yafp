@@ -1,4 +1,4 @@
-package main
+package vcsinfo
 
 import (
 	"fmt"
@@ -9,9 +9,9 @@ import (
 	"github.com/araddon/dateparse"
 )
 
-const minimalAbbRevisionNum = 7
+const MinimalAbbRevisionNum = 7
 
-func getVCSInfo(abbRevisionNum uint8) (revision string, date time.Time) {
+func Get(abbRevisionNum uint8) (revision string, date time.Time) {
 	buildInfo, ok := debug.ReadBuildInfo()
 	if !ok {
 		return "unknown", time.Unix(0, 0).UTC().Round(time.Second)
@@ -40,8 +40,8 @@ func getVCSInfo(abbRevisionNum uint8) (revision string, date time.Time) {
 		}
 	}
 
-	if int(abbRevisionNum) <= minimalAbbRevisionNum {
-		abbRevisionNum = minimalAbbRevisionNum
+	if int(abbRevisionNum) <= MinimalAbbRevisionNum {
+		abbRevisionNum = MinimalAbbRevisionNum
 	}
 
 	if len(vcsRevision) <= int(abbRevisionNum) {

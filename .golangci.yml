@@ -62,6 +62,7 @@ linters-settings:
       - stdlib
       - dynamic.Interface # K8s
       - cache.SharedIndexInformer # K8s
+      - workqueue.RateLimitingInterface #K8s
 
   lll:
     line-length: 200

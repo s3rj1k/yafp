@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
+	"github.com/s3rj1k/yafp/pkg/ratelimit"
+	"github.com/s3rj1k/yafp/pkg/vcsinfo"
 )
 
 const (
@@ -24,7 +26,7 @@ var (
 )
 
 func printInfo() {
-	vcsRev, vcsDate := getVCSInfo(defaultAbbRevisionNum)
+	vcsRev, vcsDate := vcsinfo.Get(defaultAbbRevisionNum)
 	if vcsDate.Unix() == 0 {
 		fmt.Printf("[GIN] %s | VCS_REV: %s\n",
 			time.Now().Format("2006/01/02 - 15:04:05"), // https://go.dev/src/time/format.go
@@ -63,7 +65,7 @@ func main() {
 	router := gin.Default()
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		if err := v.RegisterValidation("regexp", validRegularExpression); err != nil {
+		if err := v.RegisterValidation("regexp", validateRegularExpression); err != nil {
 			panic(err)
 		}
 	}
@@ -74,7 +76,7 @@ func main() {
 		panic(err)
 	}
 
-	router.Use(rateLimit(defaultRateLimitMaxValue))
+	router.Use(ratelimit.HandlerFunc(defaultRateLimitMaxValue))
 
 	router.HandleMethodNotAllowed = true
 	router.NoMethod(func(c *gin.Context) {

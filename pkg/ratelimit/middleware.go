@@ -1,4 +1,4 @@
-package main
+package ratelimit
 
 import (
 	"net/http"
@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func rateLimit(max float64) gin.HandlerFunc {
+func HandlerFunc(max float64) gin.HandlerFunc {
 	lmt := tollbooth.NewLimiter(max, nil)
 
 	return func(c *gin.Context) {

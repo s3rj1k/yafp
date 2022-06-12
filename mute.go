@@ -13,6 +13,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/jlelse/feeds"
 	"github.com/mmcdole/gofeed"
+	"github.com/s3rj1k/yafp/pkg/cachedregexp"
 )
 
 const (
@@ -121,8 +122,8 @@ func handleMuteFeed(c *gin.Context) {
 		}
 	}
 
-	reTitle := cachedRegexpMustCompile(cfg.TitleQuery)
-	reDescription := cachedRegexpMustCompile(cfg.DescriptionQuery)
+	reTitle := cachedregexp.MustCompile(cache, cfg.TitleQuery)
+	reDescription := cachedregexp.MustCompile(cache, cfg.DescriptionQuery)
 
 	fp := gofeed.NewParser()
 
