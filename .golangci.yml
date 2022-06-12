@@ -10,27 +10,21 @@ run:
 # [v1.46.2] https://golangci-lint.run/usage/configuration/
 linters-settings:
 
-  cyclop:
-    max-complexity: 30
+#  depguard:
+#    list-type: blacklist
+#    include-go-root: true
+#    packages:
+#      - github.com/davecgh/go-spew/spew
 
-  depguard:
-    list-type: blacklist
-    include-go-root: true
-    packages:
-      - github.com/davecgh/go-spew/spew
-
-  dupl:
-    threshold: 500
-
-  errcheck:
-    check-type-assertions: true
+  exhaustive:
+    default-signifies-exhaustive: true
 
   forbidigo:
     forbid:
       - ^print\.*$
 
   funlen:
-    lines: 240
+    lines: -1
     statements: 160
 
   gci:
@@ -43,10 +37,28 @@ linters-settings:
     enabled-tags:
       - diagnostic
       - style
+    enabled-checks:
+      - appendCombine
+      - equalFold
+      - preferDecodeRune
+      - preferFprint
+      - preferStringWriter
+      - preferWriteByte
+      - sliceClear
+      - stringXbytes
     disabled-checks:
-      - whyNoLint
-      - typeDefFirst # Golang 1.18 incompatible: https://github.com/go-critic/go-critic/issues/1193
       - paramTypeCombine # Golang 1.18 incompatible: https://github.com/go-critic/go-critic/issues/1193
+      - typeDefFirst     # Golang 1.18 incompatible: https://github.com/go-critic/go-critic/issues/1193
+      - whyNoLint
+
+  godot:
+    scope: toplevel
+    period: true
+    capital: true
+
+  gofumpt:
+    lang-version: "1.17"
+    extra-rules: true
 
   gosec:
     excludes:
@@ -54,20 +66,21 @@ linters-settings:
       - G501 # Blocklisted import crypto/md5: weak cryptographic primitive
       - G505 # Blocklisted import crypto/sha1: weak cryptographic primitive
 
+  gosimple:
+    go: "1.17"
+
   govet:
     check-shadowing: true
     enable-all: true
 
-  ireturn:
-    allow:
-      - error
-      - stdlib
-      - dynamic.Interface # K8s
-      - cache.SharedIndexInformer # K8s
-      - workqueue.RateLimitingInterface #K8s
-
   lll:
     line-length: 200
+
+  maintidx:
+    under: 20
+
+  makezero:
+    always: true
 
   misspell:
     locale: US
@@ -80,6 +93,12 @@ linters-settings:
   prealloc:
     for-loops: true
 
+  staticcheck:
+    go: "1.17"
+
+  stylecheck:
+    go: "1.17"
+
   tagliatelle:
     case:
       use-field-name: true
@@ -87,197 +106,178 @@ linters-settings:
         json: goCamel
         yaml: goCamel
 
-  varnamelen:
-    max-distance: 6
-    min-name-length: 2
-    check-receiver: true
-    check-return: true
-    check-type-param: true
-    ignore-type-assert-ok: true
-    ignore-map-index-ok: true
-    ignore-chan-recv-ok: true
-    ignore-names:
-      - err
-    ignore-decls:
-      - c echo.Context
-      - t testing.T
-      - f *foo.Bar
-      - e error
-      - i int
-      - const C
-      - T any
-      - m map[string]int
-
-# [v1.2.1] https://github.com/mgechev/revive/tree/v1.1.4#available-rules
+# [v1.2.1] https://github.com/mgechev/revive/tree/v1.2.1#available-rules
   revive:
     severity: warning
     rules:
-#      - name: add-constant
+#     - name: add-constant            # <=> gomnd
+#     - name: banned-characters
+#     - name: cognitive-complexity    # <=> gocognit
+#     - name: cyclomatic              # <=> gocyclo, cyclop
+#     - name: file-header             # <=> goheader
+#     - name: function-length         # <=> funlen
+#     - name: imports-blacklist       # <=> depguard
+#     - name: line-length-limit       # <=> lll
+#     - name: max-public-structs
+#     - name: package-comments        # no config
+#     - name: string-format
       - name: argument-limit
-        arguments: 9
-      - name: atomic
-      - name: banned-characters
-        arguments: ["Ω","Σ","σ"]
-      - name: bare-return
-      - name: blank-imports
-      - name: bool-literal-in-expr
-      - name: call-to-gc
-#      - name: cognitive-complexity
-      - name: confusing-naming
-      - name: confusing-results
-      - name: constant-logical-expr
+        arguments: 8
+      - name: atomic                  # no config
+      - name: bare-return             # no config
+      - name: blank-imports           # no config
+      - name: bool-literal-in-expr    # no config
+      - name: call-to-gc              # no config
+      - name: confusing-naming        # no config
+      - name: confusing-results       # no config
+      - name: constant-logical-expr   # no config
       - name: context-as-argument
-      - name: context-keys-type
-#      - name: cyclomatic
-      - name: deep-exit
+        arguments: [{allowTypesBefore = "*testing.T"}]
+      - name: context-keys-type       # no config
+#     - name: datarace                # no config, not avaliable in golangci-lint
+      - name: deep-exit               # no config
       - name: defer
-      - name: dot-imports
-      - name: duplicated-imports
-      - name: early-return
-      - name: empty-block
-      - name: empty-lines
-      - name: error-naming
-      - name: error-return
-      - name: error-strings
-      - name: errorf
+      - name: dot-imports             # no config
+      - name: duplicated-imports      # no config
+      - name: early-return            # no config
+      - name: empty-block             # no config
+      - name: empty-lines             # no config
+      - name: error-naming            # no config
+      - name: error-return            # no config
+      - name: error-strings           # no config
+      - name: errorf                  # no config
       - name: exported
-#      - name: file-header
-      - name: flag-parameter
-#      - name: function-length
+        arguments: ["checkPrivateReceivers", "sayRepetitiveInsteadOfStutters"]
+      - name: flag-parameter          # no config
       - name: function-result-limit
         arguments: 4
-      - name: get-return
-      - name: identical-branches
-      - name: if-return
-      - name: import-shadowing
-      - name: imports-blacklist
-      - name: increment-decrement
-      - name: indent-error-flow
-#      - name: line-length-limit
-#      - name: max-public-structs
-      - name: modifies-parameter
-      - name: modifies-value-receiver
-      - name: nested-structs
-      - name: optimize-operands-order
-      - name: package-comments
-      - name: range
-      - name: range-val-address
-      - name: range-val-in-closure
-      - name: receiver-naming
-      - name: redefines-builtin-id
-      - name: string-format
-      - name: string-of-int
-      - name: struct-tag
-      - name: superfluous-else
-      - name: time-equal
-      - name: time-naming
-      - name: unconditional-recursion
-      - name: unexported-naming
-      - name: unexported-return
+      - name: get-return              # no config
+      - name: identical-branches      # no config
+      - name: if-return               # no config
+      - name: import-shadowing        # no config
+      - name: increment-decrement     # no config
+      - name: indent-error-flow       # no config
+      - name: modifies-parameter      # no config
+      - name: modifies-value-receiver # no config
+      - name: nested-structs          # no config
+      - name: optimize-operands-order # no config
+      - name: range                   # no config
+      - name: range-val-address       # no config
+      - name: range-val-in-closure    # no config
+      - name: receiver-naming         # no config
+      - name: redefines-builtin-id    # no config
+      - name: string-of-int           # no config
+      - name: struct-tag              # no config
+      - name: superfluous-else        # no config
+      - name: time-equal              # no config
+      - name: time-naming             # no config
+      - name: unconditional-recursion # no config
+      - name: unexported-naming       # no config
+      - name: unexported-return       # no config
       - name: unhandled-error
         arguments: ["fmt.Printf", "fmt.Println", "fmt.Print"]
-      - name: unnecessary-stmt
-      - name: unreachable-code
-      - name: unused-parameter
-      - name: unused-receiver
-      - name: useless-break
-      - name: var-declaration
+      - name: unnecessary-stmt        # no config
+      - name: unreachable-code        # no config
+      - name: unused-parameter        # no config
+      - name: unused-receiver         # no config
+      - name: use-any                 # no config
+      - name: useless-break           # no config
+      - name: var-declaration         # no config
       - name: var-naming
-      - name: waitgroup-by-value
+      - name: waitgroup-by-value      # no config
 
 linters:
   disable-all: true
-  # disable: # DEPRECATED
-  #  - exhaustivestruct
-  #  - golint
-  #  - interfacer
-  #  - maligned
-  #  - scopelint
   enable:
-    - asciicheck
-    - bidichk
-    - bodyclose
-    - containedctx
-    - contextcheck
-    - cyclop
-    - deadcode
-    - decorder
-    - depguard
-    - dogsled
-    - dupl
-    - durationcheck
-    - errcheck
-    - errchkjson
-    - errname
-    - errorlint
-    - execinquery
+  # - cyclop            # <=> cyclomatic, gocyclo
+  # - depguard          # <=> imports-blacklist
+  # - dupl
+  # - errchkjson
+  # - exhaustivestruct  # !!! DEPRECATED
+  # - exhaustruct
+  # - gocognit          # <=> cognitive-complexity
+  # - gocyclo           # <=> cyclomatic, cyclop
+  # - goerr113
+  # - gofmt             # <=> gofumpt
+  # - goheader          # <=> file-header
+  # - goimports         # <=> gofumpt/gofmt && gci
+  # - golint            # !!! DEPRECATED
+  # - gomoddirectives
+  # - gomodguard
+  # - grouper
+  # - importas
+  # - interfacer        # !!! DEPRECATED
+  # - ireturn
+  # - maligned          # !!! DEPRECATED
+  # - nilnil
+  # - scopelint         # !!! DEPRECATED
+  # - varnamelen
+  # - whitespace
+    - asciicheck        # no config
+    - bidichk           # sane default config
+    - bodyclose         # no config
+    - containedctx      # no config
+    - contextcheck      # no config
+    - deadcode          # no config
+    - decorder          # sane default config
+    - dogsled           # sane default config
+    - durationcheck     # no config
+    - errcheck          # sane default config
+    - errname           # no config
+    - errorlint         # sane default config
+    - execinquery       # no config
     - exhaustive
-#    - exhaustruct
-    - exportloopref
+    - exportloopref     # no config
     - forbidigo
-    - forcetypeassert
-    - funlen
+    - forcetypeassert   # no config
+    - funlen            # <=> function-length
     - gci
-    - gochecknoglobals
-    - gochecknoinits
-#    - gocognit
-    - goconst
-    - gocritic
-#    - gocyclo
+    - gochecknoglobals  # no config
+    - gochecknoinits    # no config
+    - goconst           # sane default config
+    - gocritic          # !!!
     - godot
-    - godox
-#    - goerr113
-#    - gofmt
+    - godox             # sane default config
     - gofumpt
-#    - goheader
-    - goimports
-    - gomnd
-#    - gomoddirectives
-#    - gomodguard
-    - goprintffuncname
+    - gomnd             # sane default config, <=> add-constant
+    - goprintffuncname  # no config
     - gosec
     - gosimple
     - govet
-    - grouper
-    - ifshort
-    - importas
-    - ineffassign
-    - ireturn
-    - lll
+    - ifshort           # sane default config
+    - ineffassign       # no config
+    - lll               # <=> line-length-limit
     - maintidx
     - makezero
     - misspell
-    - nakedret
-    - nestif
-    - nilerr
-#    - nilnil
-    - nlreturn
-    - noctx
+    - nakedret          # sane default config
+    - nestif            # sane default config
+    - nilerr            # no config
+    - nlreturn          # sane default config
+    - noctx             # no config
     - nolintlint
-    - nonamedreturns
-    - nosprintfhostport
-    - paralleltest
-    - prealloc
-    - predeclared
-    - promlinter
+    - nonamedreturns    # no config
+    - nosprintfhostport # no config
+    - paralleltest      # no config
+    - prealloc          # sane default config
+    - predeclared       # sane default config
+    - promlinter        # sane default config
     - revive
-    - rowserrcheck
-    - sqlclosecheck
+    - rowserrcheck      # sane default config
+    - sqlclosecheck     # no config
     - staticcheck
     - structcheck
     - stylecheck
     - tagliatelle
-    - tenv
-    - testpackage
-    - thelper
-    - tparallel
-    - typecheck
-    - unconvert
-    - unparam
+    - tenv              # sane default config
+    - testpackage       # sane default config
+    - thelper           # sane default config
+    - tparallel         # no config
+    - typecheck         # no config
+    - unconvert         # no config
+    - unparam           # sane default config
     - unused
-    - varcheck
-#    - varnamelen
-    - wastedassign
-    - whitespace
-    - wrapcheck
-    - wsl
+    - varcheck          # sane default config
+    - wastedassign      # no config
+    - wrapcheck         # sane default config
+    - wsl               # sane default config
