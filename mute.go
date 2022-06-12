@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/jellydator/ttlcache/v3"
 	"github.com/jlelse/feeds"
 	"github.com/mmcdole/gofeed"
 	"github.com/s3rj1k/yafp/pkg/cachedregexp"
@@ -103,22 +104,25 @@ func handleMuteFeed(c *gin.Context) {
 		return
 	}
 
-	bytesOut, err := cache.Get(c.Request.URL.RawQuery)
-	if err == nil {
-		switch gofeed.DetectFeedType(bytes.NewReader(bytesOut)) {
-		case gofeed.FeedTypeRSS:
-			c.Data(http.StatusOK, contentTypeRSS, bytesOut)
+	item := cache.Get(c.Request.URL.RawQuery, ttlcache.WithDisableTouchOnHit[string, any]())
+	if err != nil {
+		bytesOut, ok := item.Value().([]byte)
+		if ok {
+			switch gofeed.DetectFeedType(bytes.NewReader(bytesOut)) {
+			case gofeed.FeedTypeRSS:
+				c.Data(http.StatusOK, contentTypeRSS, bytesOut)
 
-			return
-		case gofeed.FeedTypeAtom:
-			c.Data(http.StatusOK, contentTypeAtom, bytesOut)
+				return
+			case gofeed.FeedTypeAtom:
+				c.Data(http.StatusOK, contentTypeAtom, bytesOut)
 
-			return
-		case gofeed.FeedTypeJSON:
-			c.Data(http.StatusOK, contentTypeJSON, bytesOut)
+				return
+			case gofeed.FeedTypeJSON:
+				c.Data(http.StatusOK, contentTypeJSON, bytesOut)
 
-			return
-		case gofeed.FeedTypeUnknown:
+				return
+			case gofeed.FeedTypeUnknown:
+			}
 		}
 	}
 
@@ -269,15 +273,9 @@ func handleMuteFeed(c *gin.Context) {
 		return
 	}
 
-	bytesOut = []byte(out)
+	bytesOut := []byte(out)
 
-	err = cache.Set(c.Request.URL.RawQuery, bytesOut)
-	if err != nil {
-		c.String(http.StatusServiceUnavailable,
-			"%d Unable to cache feed data", http.StatusServiceUnavailable)
-
-		return
-	}
+	_ = cache.Set(c.Request.URL.RawQuery, bytesOut, ttlcache.DefaultTTL)
 
 	c.Data(http.StatusOK, contentType, bytesOut)
 }

@@ -1,53 +1,25 @@
 package main
 
 import (
-	"flag"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
+	"github.com/jellydator/ttlcache/v3"
 	"github.com/s3rj1k/yafp/pkg/ratelimit"
-	"github.com/s3rj1k/yafp/pkg/vcsinfo"
 )
 
 const (
+	defaultCacheRecordTTL    = 15 * time.Minute
 	defaultRateLimitMaxValue = 20
-	defaultAbbRevisionNum    = 8
 )
 
-//nolint:gochecknoglobals // CLI configuration flags
+//nolint:gochecknoglobals // global cache
 var (
-	flagBindAddress string
-
-	flagVersion bool
+	cache *ttlcache.Cache[string, any]
 )
-
-func printInfo() {
-	vcsRev, vcsDate := vcsinfo.Get(defaultAbbRevisionNum)
-	if vcsDate.Unix() == 0 {
-		fmt.Printf("[GIN] %s | VCS_REV: %s\n",
-			time.Now().Format("2006/01/02 - 15:04:05"), // https://go.dev/src/time/format.go
-			vcsRev,
-		)
-	} else {
-		fmt.Printf("[GIN] %s | VCS_REV: %s | VCS_DATE: %v\n",
-			time.Now().Format("2006/01/02 - 15:04:05"), // https://go.dev/src/time/format.go
-			vcsRev, vcsDate,
-		)
-	}
-}
-
-func parseInputConfiguration() error {
-	flag.BoolVar(&flagVersion, "version", false, "Show build information and exit")
-	flag.StringVar(&flagBindAddress, "bind-address", ":8080", "Address for HTTP server bind")
-
-	flag.Parse()
-
-	return nil
-}
 
 func main() {
 	if err := parseInputConfiguration(); err != nil {
@@ -76,7 +48,7 @@ func main() {
 		panic(err)
 	}
 
-	router.Use(ratelimit.HandlerFunc(defaultRateLimitMaxValue))
+	_ = router.Use(ratelimit.HandlerFunc(defaultRateLimitMaxValue))
 
 	router.HandleMethodNotAllowed = true
 	router.NoMethod(func(c *gin.Context) {
@@ -88,11 +60,18 @@ func main() {
 		c.String(http.StatusNotFound, "%d Not Found\n", http.StatusNotFound)
 	})
 
-	router.HEAD("/mute", func(c *gin.Context) {
+	_ = router.HEAD("/mute", func(c *gin.Context) {
 		c.String(http.StatusNoContent, "")
 	})
 
-	router.GET("/mute", handleMuteFeed)
+	_ = router.GET("/mute", handleMuteFeed)
+
+	cache = ttlcache.New[string, any](
+		ttlcache.WithTTL[string, any](defaultCacheRecordTTL),
+	)
+
+	go cache.Start()
+	defer cache.Stop()
 
 	if err := router.Run(flagBindAddress); err != nil {
 		panic(err)

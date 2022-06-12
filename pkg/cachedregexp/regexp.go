@@ -1,51 +1,33 @@
 package cachedregexp
 
 import (
-	"bytes"
-	"encoding/gob"
 	"fmt"
 	"regexp"
 	"strconv"
 
-	"github.com/s3rj1k/yafp/pkg/stub"
+	"github.com/jellydator/ttlcache/v3"
 )
 
-func Compile(cache stub.Cache, expr string) (re *regexp.Regexp, err error) {
+func Compile(cache *ttlcache.Cache[string, any], expr string) (re *regexp.Regexp, err error) {
 	f := func(expr string) (re *regexp.Regexp, err error) {
 		re, err = regexp.Compile(expr)
 		if err != nil {
 			return nil, fmt.Errorf("regexp compile error: %w", err)
 		}
 
-		var buf bytes.Buffer
-		enc := gob.NewEncoder(&buf)
-
-		err = enc.Encode(re)
-		if err != nil {
-			return nil, fmt.Errorf("gob encode error: %w", err)
-		}
-
-		err = cache.Set(expr, buf.Bytes())
-		if err != nil {
-			return nil, fmt.Errorf("cache set error: %w", err)
-		}
+		_ = cache.Set(expr, re, ttlcache.DefaultTTL)
 
 		return re, nil
 	}
 
-	b, err := cache.Get(expr)
-	if err != nil {
+	item := cache.Get(expr)
+	if item == nil {
 		return f(expr)
 	}
 
-	r := bytes.NewReader(b)
-	dec := gob.NewDecoder(r)
-
-	err = dec.Decode(re)
-	if err != nil {
-		_ = cache.Delete(expr)
-
-		return nil, fmt.Errorf("gob decode error: %w", err)
+	re, ok := item.Value().(*regexp.Regexp)
+	if !ok {
+		return f(expr)
 	}
 
 	return re, nil
@@ -59,7 +41,7 @@ func quote(s string) string {
 	return strconv.Quote(s)
 }
 
-func MustCompile(cache stub.Cache, expr string) *regexp.Regexp {
+func MustCompile(cache *ttlcache.Cache[string, any], expr string) *regexp.Regexp {
 	re, err := Compile(cache, expr)
 	if err != nil {
 		panic(`regexp: Compile(` + quote(expr) + `): ` + err.Error())
