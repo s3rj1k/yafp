@@ -8,9 +8,9 @@ import (
 	"github.com/jellydator/ttlcache/v3"
 )
 
-func Compile(cache *ttlcache.Cache[string, any], expr string) (re *regexp.Regexp, err error) {
-	f := func(expr string) (re *regexp.Regexp, err error) {
-		re, err = regexp.Compile(expr)
+func Compile(cache *ttlcache.Cache[string, any], expr string) (*regexp.Regexp, error) {
+	f := func(expr string) (*regexp.Regexp, error) {
+		re, err := regexp.Compile(expr)
 		if err != nil {
 			return nil, fmt.Errorf("regexp compile error: %w", err)
 		}

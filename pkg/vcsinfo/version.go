@@ -11,7 +11,12 @@ import (
 
 const MinimalAbbRevisionNum = 7
 
-func Get(abbRevisionNum uint8) (revision string, date time.Time) {
+func Get(abbRevisionNum uint8) (string, time.Time) {
+	var (
+		revision string
+		date     time.Time
+	)
+
 	buildInfo, ok := debug.ReadBuildInfo()
 	if !ok {
 		return "unknown", time.Unix(0, 0).UTC().Round(time.Second)

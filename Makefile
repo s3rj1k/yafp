@@ -11,9 +11,9 @@ ARTIFACTS_DIR := $(abspath $(or $(ARTIFACTS_DIR),$(addprefix $(PROJECT_DIR),BUIL
 GO_MOD_COMPAT_VERSION := 1.18
 
 # Version of linter.
-#  - https://github.com/golangci/golangci-lint/releases/tag/v1.45.2
-#  - https://github.com/mgechev/revive/tree/v1.1.4
-GOLANGCI_LINT_VERSION := $(or $(GOLANGCI_LINT_VERSION),v1.45.2)
+#  - https://github.com/golangci/golangci-lint/releases/tag/v1.46.2
+#  - https://github.com/mgechev/revive/tree/v1.2.1
+GOLANGCI_LINT_VERSION := $(or $(GOLANGCI_LINT_VERSION),v1.46.2)
 
 # Set common utilities environs.
 DATE_BIN := $(or $(DATE_BIN),date)

@@ -7,7 +7,7 @@ run:
     - api/?.*/groupversion_info.go
     - api/?.*/object_.*.go
 
-# [v1.45.2] https://golangci-lint.run/usage/configuration/
+# [v1.46.2] https://golangci-lint.run/usage/configuration/
 linters-settings:
 
   cyclop:
@@ -45,6 +45,8 @@ linters-settings:
       - style
     disabled-checks:
       - whyNoLint
+      - typeDefFirst # Golang 1.18 incompatible: https://github.com/go-critic/go-critic/issues/1193
+      - paramTypeCombine # Golang 1.18 incompatible: https://github.com/go-critic/go-critic/issues/1193
 
   gosec:
     excludes:
@@ -106,7 +108,7 @@ linters-settings:
       - T any
       - m map[string]int
 
-# [v1.1.4] https://github.com/mgechev/revive/tree/v1.1.4#available-rules
+# [v1.2.1] https://github.com/mgechev/revive/tree/v1.1.4#available-rules
   revive:
     severity: warning
     rules:
@@ -186,6 +188,7 @@ linters-settings:
 linters:
   disable-all: true
   # disable: # DEPRECATED
+  #  - exhaustivestruct
   #  - golint
   #  - interfacer
   #  - maligned
@@ -207,8 +210,9 @@ linters:
     - errchkjson
     - errname
     - errorlint
+    - execinquery
     - exhaustive
-#    - exhaustivestruct
+#    - exhaustruct
     - exportloopref
     - forbidigo
     - forcetypeassert
@@ -250,6 +254,8 @@ linters:
     - nlreturn
     - noctx
     - nolintlint
+    - nonamedreturns
+    - nosprintfhostport
     - paralleltest
     - prealloc
     - predeclared
