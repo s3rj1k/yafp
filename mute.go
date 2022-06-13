@@ -15,14 +15,11 @@ import (
 	"github.com/jlelse/feeds"
 	"github.com/mmcdole/gofeed"
 	"github.com/s3rj1k/yafp/pkg/cachedregexp"
+	"github.com/s3rj1k/yafp/pkg/feedhlp"
 )
 
 const (
 	feedFetchTimeoutSeconds = 90
-
-	contentTypeRSS  = "application/rss+xml"
-	contentTypeAtom = "application/atom+xml"
-	contentTypeJSON = "application/feed+json"
 )
 
 type Mute struct {
@@ -62,38 +59,6 @@ func validationMuteErrorResponse(c *gin.Context, err error) {
 	c.String(http.StatusBadRequest, "%s\n", strings.Join(resp, "\n"))
 }
 
-func feedFetchErrorResponse(c *gin.Context, err error) {
-	if errors.Is(err, context.Canceled) {
-		c.String(http.StatusServiceUnavailable, "%d Service Unavailable", http.StatusServiceUnavailable)
-
-		return
-	}
-
-	if errors.Is(err, context.DeadlineExceeded) {
-		c.String(http.StatusGatewayTimeout, "%d Gateway Timeout", http.StatusGatewayTimeout)
-
-		return
-	}
-
-	if errors.Is(err, gofeed.ErrFeedTypeNotDetected) {
-		c.String(http.StatusServiceUnavailable,
-			"%d Failed to detect feed type", http.StatusServiceUnavailable)
-
-		return
-	}
-
-	var httpError gofeed.HTTPError
-
-	if errors.As(err, &httpError) {
-		c.String(httpError.StatusCode, httpError.Status)
-
-		return
-	}
-
-	c.String(http.StatusServiceUnavailable,
-		"%d Unexpected Error", http.StatusServiceUnavailable)
-}
-
 func handleMuteFeed(c *gin.Context) {
 	cfg := new(Mute)
 
@@ -110,15 +75,15 @@ func handleMuteFeed(c *gin.Context) {
 		if ok {
 			switch gofeed.DetectFeedType(bytes.NewReader(bytesOut)) {
 			case gofeed.FeedTypeRSS:
-				c.Data(http.StatusOK, contentTypeRSS, bytesOut)
+				c.Data(http.StatusOK, feedhlp.ContentTypeRSS, bytesOut)
 
 				return
 			case gofeed.FeedTypeAtom:
-				c.Data(http.StatusOK, contentTypeAtom, bytesOut)
+				c.Data(http.StatusOK, feedhlp.ContentTypeAtom, bytesOut)
 
 				return
 			case gofeed.FeedTypeJSON:
-				c.Data(http.StatusOK, contentTypeJSON, bytesOut)
+				c.Data(http.StatusOK, feedhlp.ContentTypeJSON, bytesOut)
 
 				return
 			case gofeed.FeedTypeUnknown:
@@ -138,7 +103,7 @@ func handleMuteFeed(c *gin.Context) {
 
 	feedIn, err := fp.ParseURLWithContext(cfg.FeedURL, ctx)
 	if err != nil {
-		feedFetchErrorResponse(c, err)
+		c.String(feedhlp.HTTPErrorResponse(err))
 
 		return
 	}
@@ -152,120 +117,32 @@ func handleMuteFeed(c *gin.Context) {
 
 	currentTime := time.Now()
 
-	feedOut := &feeds.Feed{
-		Title: feedIn.Title,
-		Link: &feeds.Link{
-			Href: feedIn.Link,
-		},
-		Description: feedIn.Description,
-		Copyright:   feedIn.Copyright,
-	}
-
-	if feedIn.PublishedParsed != nil {
-		feedOut.Created = *feedIn.PublishedParsed
-	}
-
-	if feedIn.UpdatedParsed != nil {
-		feedOut.Updated = currentTime
-	}
-
-	if len(feedIn.Authors) > 0 {
-		author := feedIn.Authors[0]
-		if author != nil {
-			feedOut.Author.Name = author.Name
-			feedOut.Author.Email = author.Email
-		}
-	}
-
-	if feedIn.Image != nil {
-		feedOut.Image = &feeds.Image{
-			Title: feedIn.Image.Title,
-			Link:  feedIn.Image.URL,
-			Url:   feedIn.Image.URL,
-		}
-	}
-
-	feedOut.Items = make([]*feeds.Item, 0, len(feedIn.Items))
-
-	for _, el := range feedIn.Items {
-		if el == nil {
-			continue
-		}
-
-		var (
-			updated time.Time
-			created time.Time
-		)
-
-		if el.UpdatedParsed != nil {
-			updated = *el.UpdatedParsed
-		}
-
-		if el.PublishedParsed != nil {
-			created = *el.PublishedParsed
-		}
-
-		author := &feeds.Author{
-			Name:  "",
-			Email: "",
-		}
-
-		if el.Author != nil {
-			author = &feeds.Author{
-				Name:  el.Author.Name,
-				Email: el.Author.Email,
-			}
-		}
-
-		if (cfg.TitleQuery != "" && reTitle.MatchString(el.Title)) ||
-			(cfg.DescriptionQuery != "" && reDescription.MatchString(el.Description)) {
+	feedOut := feedhlp.MutateFeed(feedIn, func(item *feeds.Item) *feeds.Item {
+		if (cfg.TitleQuery != "" && reTitle.MatchString(item.Title)) ||
+			(cfg.DescriptionQuery != "" && reDescription.MatchString(item.Description)) {
 			if cfg.RewriteAuthor == "" {
 				// do not add item to resulting feed when
 				// RegExp matched and RewriteAuthor not specified
-				continue
+				return nil
 			}
 
-			author = &feeds.Author{
+			item.Author = &feeds.Author{
 				Name:  cfg.RewriteAuthor,
 				Email: "",
 			}
 
-			updated = currentTime
+			item.Updated = currentTime
 		}
 
-		feedOut.Items = append(feedOut.Items, &feeds.Item{
-			Title: el.Title,
-			Link: &feeds.Link{
-				Href: el.Link,
-			},
-			Author: &feeds.Author{
-				Name:  author.Name,
-				Email: author.Email,
-			},
-			Description: el.Description,
-			Id:          el.GUID,
-			Updated:     updated,
-			Created:     created,
-		})
+		return item
+	})
+
+	contentType := feedhlp.GetContentTypeFromFeed(feedIn)
+	if contentType == "" {
+		contentType = feedhlp.ContentTypeRSS
 	}
 
-	var out, contentType string
-
-	switch feedIn.FeedType {
-	case "rss":
-		contentType = contentTypeRSS
-		out, err = feedOut.ToRss()
-	case "atom":
-		contentType = contentTypeAtom
-		out, err = feedOut.ToAtom()
-	case "json":
-		contentType = contentTypeJSON
-		out, err = feedOut.ToJSON()
-	default:
-		contentType = contentTypeRSS
-		out, err = feedOut.ToRss()
-	}
-
+	out, err := feedhlp.RenderFeedBasedOnProvidedContentType(feedOut, contentType)
 	if err != nil {
 		c.String(http.StatusServiceUnavailable,
 			"%d Unable to build feed", http.StatusServiceUnavailable)

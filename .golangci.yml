@@ -210,6 +210,7 @@ linters:
   # - ireturn
   # - maligned          # !!! DEPRECATED
   # - nilnil
+  # - nonamedreturns    # no config
   # - scopelint         # !!! DEPRECATED
   # - varnamelen
   # - whitespace
@@ -256,7 +257,6 @@ linters:
     - nlreturn          # sane default config
     - noctx             # no config
     - nolintlint
-    - nonamedreturns    # no config
     - nosprintfhostport # no config
     - paralleltest      # no config
     - prealloc          # sane default config
