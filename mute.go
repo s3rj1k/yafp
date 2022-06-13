@@ -3,19 +3,17 @@ package main
 import (
 	"bytes"
 	"context"
-	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/jellydator/ttlcache/v3"
 	"github.com/jlelse/feeds"
 	"github.com/mmcdole/gofeed"
 	"github.com/s3rj1k/yafp/pkg/cachedregexp"
 	"github.com/s3rj1k/yafp/pkg/feedhlp"
+	"github.com/s3rj1k/yafp/pkg/validation"
 )
 
 const (
@@ -38,33 +36,15 @@ func muteProperURLQueryParamsName() *strings.Replacer {
 	)
 }
 
-func validationMuteErrorResponse(c *gin.Context, err error) {
-	validationErrors := new(validator.ValidationErrors)
-	resp := make([]string, 0)
-
-	resp = append(resp, fmt.Sprintf("%d Bad Request", http.StatusBadRequest))
-
-	if errors.As(err, validationErrors) {
-		for _, el := range *validationErrors {
-			resp = append(resp,
-				fmt.Sprintf(
-					"* URL query parameter validation for '%s' failed on the '%s' tag",
-					muteProperURLQueryParamsName().Replace(el.Field()),
-					el.Tag(),
-				),
-			)
-		}
-	}
-
-	c.String(http.StatusBadRequest, "%s\n", strings.Join(resp, "\n"))
-}
-
 func handleMuteFeed(c *gin.Context) {
 	cfg := new(Mute)
 
 	err := c.BindQuery(cfg)
 	if err != nil {
-		validationMuteErrorResponse(c, err)
+		validation.ErrorResponse(err, muteProperURLQueryParamsName())
+		c.String(http.StatusBadRequest, "%s\n",
+			validation.ErrorResponse(err, muteProperURLQueryParamsName()),
+		)
 
 		return
 	}
