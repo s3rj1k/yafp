@@ -8,26 +8,32 @@ import (
 	"github.com/jellydator/ttlcache/v3"
 )
 
+const (
+	DefaultKeyPrefix = "REGEXP:"
+)
+
 func Compile(cache *ttlcache.Cache[string, any], expr string) (*regexp.Regexp, error) {
-	f := func(expr string) (*regexp.Regexp, error) {
+	key := fmt.Sprintf("%s%s", DefaultKeyPrefix, expr)
+
+	f := func(key, expr string) (*regexp.Regexp, error) {
 		re, err := regexp.Compile(expr)
 		if err != nil {
 			return nil, fmt.Errorf("regexp compile error: %w", err)
 		}
 
-		_ = cache.Set(expr, re, ttlcache.DefaultTTL)
+		_ = cache.Set(key, re, ttlcache.DefaultTTL)
 
 		return re, nil
 	}
 
-	item := cache.Get(expr)
+	item := cache.Get(key)
 	if item == nil {
-		return f(expr)
+		return f(key, expr)
 	}
 
 	re, ok := item.Value().(*regexp.Regexp)
 	if !ok {
-		return f(expr)
+		return f(key, expr)
 	}
 
 	return re, nil
