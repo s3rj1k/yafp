@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	defaultCacheRecordTTL    = 15 * time.Minute
-	defaultRateLimitMaxValue = 20
+	defaultCacheRecordTTL = 15 * time.Minute
 )
 
 //nolint:gochecknoglobals // global cache
@@ -48,7 +47,14 @@ func main() {
 		panic(err)
 	}
 
-	_ = router.Use(ratelimit.HandlerFunc(defaultRateLimitMaxValue))
+	_ = router.Use(
+		ratelimit.NewRateLimiter(
+			cache,
+			ratelimit.DefaultKeyFunc,
+			ratelimit.DefaultLimiterFunc,
+			ratelimit.DefaultAbortFunc,
+		),
+	)
 
 	router.HandleMethodNotAllowed = true
 	router.NoMethod(func(c *gin.Context) {
@@ -64,11 +70,11 @@ func main() {
 		c.String(http.StatusNoContent, "")
 	})
 
-	_ = router.GET("/mute", handleMuteFeed)
-
 	cache = ttlcache.New[string, any](
 		ttlcache.WithTTL[string, any](defaultCacheRecordTTL),
 	)
+
+	_ = router.GET("/mute", handleMuteFeed)
 
 	go cache.Start()
 	defer cache.Stop()
