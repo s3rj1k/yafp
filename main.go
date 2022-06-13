@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	"github.com/jellydator/ttlcache/v3"
+	"github.com/s3rj1k/yafp/pkg/gincache"
 	"github.com/s3rj1k/yafp/pkg/ratelimit"
 	"github.com/s3rj1k/yafp/pkg/vcsinfo"
 )
@@ -69,6 +70,11 @@ func main() {
 			ratelimit.DefaultKeyFunc,
 			ratelimit.DefaultLimiterFunc,
 			ratelimit.DefaultAbortFunc,
+		),
+		gincache.Cache(
+			cache,
+			ttlcache.DefaultTTL,
+			feedFetchTimeoutSeconds,
 		),
 	)
 

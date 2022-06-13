@@ -1,14 +1,12 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jellydator/ttlcache/v3"
 	"github.com/jlelse/feeds"
 	"github.com/mmcdole/gofeed"
 	"github.com/s3rj1k/yafp/pkg/cachedregexp"
@@ -39,25 +37,12 @@ func muteProperURLQueryParamsName() *strings.Replacer {
 func handleMuteFeed(c *gin.Context) {
 	cfg := new(Mute)
 
-	err := c.BindQuery(cfg)
-	if err != nil {
+	if err := c.BindQuery(cfg); err != nil {
 		c.String(http.StatusBadRequest, "%s\n",
 			validation.ErrorResponse(err, muteProperURLQueryParamsName()),
 		)
 
 		return
-	}
-
-	item := cache.Get(c.Request.URL.RawQuery, ttlcache.WithDisableTouchOnHit[string, any]())
-	if err != nil {
-		bytesOut, ok := item.Value().([]byte)
-		if ok {
-			if contentType := feedhlp.GetContentTypeFromReader(bytes.NewReader(bytesOut)); contentType != "" {
-				c.Data(http.StatusOK, contentType, bytesOut)
-
-				return
-			}
-		}
 	}
 
 	reTitle := cachedregexp.MustCompile(cache, cfg.TitleQuery)
@@ -119,9 +104,5 @@ func handleMuteFeed(c *gin.Context) {
 		return
 	}
 
-	bytesOut := []byte(out)
-
-	_ = cache.Set(c.Request.URL.RawQuery, bytesOut, ttlcache.DefaultTTL)
-
-	c.Data(http.StatusOK, contentType, bytesOut)
+	c.Data(http.StatusOK, contentType, []byte(out))
 }
