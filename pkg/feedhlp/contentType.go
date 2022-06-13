@@ -2,6 +2,7 @@ package feedhlp
 
 import (
 	"errors"
+	"io"
 
 	"github.com/jlelse/feeds"
 	"github.com/mmcdole/gofeed"
@@ -14,6 +15,21 @@ const (
 )
 
 var ErrUnknownContentType = errors.New("unknown Content-Type")
+
+func GetContentTypeFromReader(feed io.Reader) string {
+	switch gofeed.DetectFeedType(feed) {
+	case gofeed.FeedTypeRSS:
+		return ContentTypeRSS
+	case gofeed.FeedTypeAtom:
+		return ContentTypeAtom
+	case gofeed.FeedTypeJSON:
+		return ContentTypeJSON
+	case gofeed.FeedTypeUnknown:
+		return ""
+	}
+
+	return ""
+}
 
 func GetContentTypeFromFeed(feed *gofeed.Feed) string {
 	var contentType string

@@ -52,20 +52,10 @@ func handleMuteFeed(c *gin.Context) {
 	if err != nil {
 		bytesOut, ok := item.Value().([]byte)
 		if ok {
-			switch gofeed.DetectFeedType(bytes.NewReader(bytesOut)) {
-			case gofeed.FeedTypeRSS:
-				c.Data(http.StatusOK, feedhlp.ContentTypeRSS, bytesOut)
+			if contentType := feedhlp.GetContentTypeFromReader(bytes.NewReader(bytesOut)); contentType != "" {
+				c.Data(http.StatusOK, contentType, bytesOut)
 
 				return
-			case gofeed.FeedTypeAtom:
-				c.Data(http.StatusOK, feedhlp.ContentTypeAtom, bytesOut)
-
-				return
-			case gofeed.FeedTypeJSON:
-				c.Data(http.StatusOK, feedhlp.ContentTypeJSON, bytesOut)
-
-				return
-			case gofeed.FeedTypeUnknown:
 			}
 		}
 	}
