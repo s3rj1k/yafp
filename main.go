@@ -45,7 +45,7 @@ func main() {
 	router := gin.Default()
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		if err := v.RegisterValidation("regexp", validateRegularExpression); err != nil {
+		if err := v.RegisterValidation("regexp", ValidateRegularExpression); err != nil {
 			panic(err)
 		}
 	}
@@ -55,6 +55,13 @@ func main() {
 	if err := router.SetTrustedProxies(nil); err != nil {
 		panic(err)
 	}
+
+	cache = ttlcache.New[string, any](
+		ttlcache.WithTTL[string, any](defaultCacheRecordTTL),
+	)
+
+	go cache.Start()
+	defer cache.Stop()
 
 	_ = router.Use(
 		ratelimit.NewRateLimiter(
@@ -79,14 +86,7 @@ func main() {
 		c.String(http.StatusNoContent, "")
 	})
 
-	cache = ttlcache.New[string, any](
-		ttlcache.WithTTL[string, any](defaultCacheRecordTTL),
-	)
-
 	_ = router.GET("/mute", handleMuteFeed)
-
-	go cache.Start()
-	defer cache.Stop()
 
 	if err := router.Run(flagBindAddress); err != nil {
 		panic(err)

@@ -5,7 +5,7 @@ import (
 	"github.com/s3rj1k/yafp/pkg/cachedregexp"
 )
 
-func validateRegularExpression(fl validator.FieldLevel) bool {
+func ValidateRegularExpression(fl validator.FieldLevel) bool {
 	query, ok := fl.Field().Interface().(string)
 	if !ok {
 		return false
