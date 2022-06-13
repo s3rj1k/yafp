@@ -41,7 +41,6 @@ func handleMuteFeed(c *gin.Context) {
 
 	err := c.BindQuery(cfg)
 	if err != nil {
-		validation.ErrorResponse(err, muteProperURLQueryParamsName())
 		c.String(http.StatusBadRequest, "%s\n",
 			validation.ErrorResponse(err, muteProperURLQueryParamsName()),
 		)
