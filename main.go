@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -9,9 +10,11 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/jellydator/ttlcache/v3"
 	"github.com/s3rj1k/yafp/pkg/ratelimit"
+	"github.com/s3rj1k/yafp/pkg/vcsinfo"
 )
 
 const (
+	defaultAbbRevisionNum = 8
 	defaultCacheRecordTTL = 15 * time.Minute
 )
 
@@ -25,7 +28,13 @@ func main() {
 		panic(err)
 	}
 
-	printInfo()
+	if err := vcsinfo.FprintInfo(os.Stdout, "[GIN]",
+		vcsinfo.DefaultDelimiter,
+		vcsinfo.DefaultTimeFormat,
+		defaultAbbRevisionNum,
+	); err != nil {
+		panic(err)
+	}
 
 	if flagVersion {
 		return
