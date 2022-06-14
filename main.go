@@ -67,11 +67,12 @@ func main() {
 
 	_ = router.Use(
 		gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
-			return fmt.Sprintf("[GIN] %v | %3d | %13v | %15s | %-7s %#v\n%s",
+			return fmt.Sprintf("[GIN] %v | %3d | %13v | %15s | %s | %s %#v\n%s",
 				param.TimeStamp.Format("2006/01/02 - 15:04:05"),
 				param.StatusCode,
 				param.Latency,
 				param.ClientIP,
+				param.Request.UserAgent(),
 				param.Method,
 				param.Path,
 				param.ErrorMessage,
