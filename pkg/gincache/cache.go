@@ -2,13 +2,55 @@ package gincache
 
 import (
 	"bytes"
+	"fmt"
+	"net/http"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 	"github.com/jellydator/ttlcache/v3"
 	"golang.org/x/sync/singleflight"
 )
+
+func getCacheKey(c *gin.Context) (string, error) {
+	if c == nil {
+		return "", fmt.Errorf("undefined server context")
+	}
+
+	if c.Request == nil {
+		return "", fmt.Errorf("undefined request object")
+	}
+
+	if c.Request.URL == nil {
+		return "", fmt.Errorf("undefined request URL object")
+	}
+
+	return c.Request.URL.String(), nil
+}
+
+func isCacheble(c *gin.Context, rcw *ResponseCacheWriter) bool {
+	return c.Request.Method == http.MethodGet &&
+		!c.IsAborted() &&
+		rcw.Status() >= 200 &&
+		rcw.Status() < 300 // only cache 2xx response to GET
+}
+
+func getDynamicTTLValue(item *ttlcache.Item[string, any]) string {
+	if item.IsExpired() {
+		return "0s"
+	}
+
+	delta := item.ExpiresAt().UTC().Unix() - time.Now().UTC().Unix()
+	if delta < 0 {
+		return "0s"
+	}
+
+	duration, err := time.ParseDuration(fmt.Sprintf("%ds", delta))
+	if err != nil {
+		panic(err)
+	}
+
+	return duration.String()
+}
 
 // Original code by: https://github.com/chenyahui/gin-cache
 
@@ -19,15 +61,24 @@ func Cache(
 	sfg := new(singleflight.Group)
 
 	return func(c *gin.Context) {
-		cacheKey := c.Request.URL.RawQuery
-
-		// FIXME:
-		spew.Dump(cacheKey)
+		cacheKey, err := getCacheKey(c)
+		if err != nil {
+			panic(err)
+		}
 
 		item := cache.Get(cacheKey, ttlcache.WithDisableTouchOnHit[string, any]())
 		if item != nil {
-			if cachedResponse, ok := item.Value().(*CachedResponse); ok {
-				cachedResponse.Send(c)
+			if cachedResponse, ok := item.Value().(*CachedResponse); !item.IsExpired() && ok {
+				cachedResponse.Send(c,
+					HTTPHeader{
+						Key:   "X-Cache",
+						Value: "HIT",
+					},
+					HTTPHeader{
+						Key:   "X-Cache-TTL",
+						Value: getDynamicTTLValue(item),
+					},
+				)
 
 				return
 			}
@@ -61,13 +112,12 @@ func Cache(
 				Header: rcw.Header().Clone(),
 			}
 
-			if !c.IsAborted() && rcw.Status() >= 200 && rcw.Status() < 300 {
-				cache.Set(cacheKey, cachedResponse, recordTTL) // only cache 2xx response
+			if isCacheble(c, rcw) {
+				cache.Set(cacheKey, cachedResponse, recordTTL)
 			}
 
 			return cachedResponse, nil
 		})
-
 		if err != nil {
 			panic(err)
 		}

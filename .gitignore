@@ -1,6 +1,7 @@
 # Binaries for programs and plugins.
 bin/
 BUILD/
+yafp
 
 # Test binary, build with `go test -c`.
 *.test

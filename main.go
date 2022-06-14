@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -16,7 +17,7 @@ import (
 
 const (
 	defaultAbbRevisionNum = 8
-	defaultCacheRecordTTL = 15 * time.Minute
+	defaultCacheRecordTTL = 30 * time.Minute
 )
 
 //nolint:gochecknoglobals // global cache
@@ -43,7 +44,7 @@ func main() {
 
 	gin.SetMode(gin.ReleaseMode)
 
-	router := gin.Default()
+	router := gin.New()
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		if err := v.RegisterValidation("regexp", ValidateRegularExpression); err != nil {
@@ -65,6 +66,18 @@ func main() {
 	defer cache.Stop()
 
 	_ = router.Use(
+		gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+			return fmt.Sprintf("[GIN] %v | %3d | %13v | %15s | %-7s %#v\n%s",
+				param.TimeStamp.Format("2006/01/02 - 15:04:05"),
+				param.StatusCode,
+				param.Latency,
+				param.ClientIP,
+				param.Method,
+				param.Path,
+				param.ErrorMessage,
+			)
+		}),
+		gin.Recovery(),
 		ratelimit.NewRateLimiter(
 			cache,
 			ratelimit.DefaultKeyFunc,
