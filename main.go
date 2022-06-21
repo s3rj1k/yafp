@@ -42,12 +42,17 @@ func main() {
 		return
 	}
 
+	gin.DisableConsoleColor()
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.New()
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		if err := v.RegisterValidation("regexp", ValidateRegularExpression); err != nil {
+			panic(err)
+		}
+
+		if err := v.RegisterValidation("tg", ValidateTGChannelName); err != nil {
 			panic(err)
 		}
 	}
@@ -107,6 +112,12 @@ func main() {
 	})
 
 	_ = router.GET("/mute", handleMuteFeed)
+
+	_ = router.HEAD("/tg", func(c *gin.Context) {
+		c.String(http.StatusNoContent, "")
+	})
+
+	_ = router.GET("/tg/:name", handleTG)
 
 	if err := router.Run(flagBindAddress); err != nil {
 		panic(err)

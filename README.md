@@ -1,5 +1,7 @@
 # yafp: Yet Another Feed Proxy
 
+## MUTE:
+
 ### feedly_filter:
     author:FEEDLY_LEO_MUTE_ME
 
@@ -24,3 +26,8 @@
 
 ### full_url_example:
     http://localhost:8080/mute?feed_url=http%3A%2F%2Ffast-torrent.ru%2Ffeeds%2Frss%2F&title_query=%5C%28%2819%5B0-9%5D%5B0-9%5D%7C20%5B0-1%5D%5B0-9%5D%7C19%5B0-9%5D%5B0-9%5D-19%5B0-9%5D%5B0-9%5D%7C19%5B0-9%5D%5B0-9%5D-20%5B0-1%5D%5B0-9%5D%7C20%5B0-1%5D%5B0-9%5D-20%5B0-1%5D%5B0-9%5D%29%5C%29
+
+## Telegram:
+
+### Telegram channel to RSS feed:
+    http://localhost:8080/tg/hacker_news_feed

@@ -84,6 +84,8 @@ func MutateFeed(feedIn *gofeed.Feed, mutateFeedItemFunc func(item *feeds.Item) *
 			author.Email = el.Author.Email
 		}
 
+		item.Author = author
+
 		item = mutateFeedItemFunc(item)
 		if item == nil {
 			continue
