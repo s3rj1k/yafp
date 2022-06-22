@@ -15,14 +15,22 @@ func GetMessage(selection *goquery.Selection) (title, body string, err error) {
 		return "", "", ErrNotFound
 	}
 
+	body, err = item.Html()
+	if err != nil {
+		return "", "", fmt.Errorf("message body error: %w", ErrNoData)
+	}
+
+	body = strings.TrimSpace(body)
+
 	title = Ellipsize(Textify(item))
 	if title == "" {
 		return "", "", fmt.Errorf("message title error: %w", ErrNoData)
 	}
 
-	body, err = item.Html()
-	if err != nil {
-		return "", "", fmt.Errorf("message body error: %w", ErrNoData)
+	if strings.Contains(title, "http://") || strings.Contains(title, "https://") {
+		if val := selection.Find("div.link_preview_title").First().Text(); val != "" {
+			return val, body, nil
+		}
 	}
 
 	return title, body, nil
